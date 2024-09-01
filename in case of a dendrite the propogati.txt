@@ -1,0 +1,12 @@
+in case of a dendrite the propogation velocity is proportional to square root of u just like axon. but there it is the pseudo velocity 
+in parkinsons disease, dopaminergic cells of substantia nigra pars compacta start dying 
+
+
+Doubts 
+For the FN model ,the values of r,b will be given right 
+for the delta in FN model , can we alwyas consider r << f'(v) 
+the v and w correspond to na and k gates respectively 
+Also will the plots of the nullclines be given ?
+
+
+neet code

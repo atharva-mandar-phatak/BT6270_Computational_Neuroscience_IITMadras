@@ -1,0 +1,141 @@
+# THIS PROGRAM DEMONSTRATES HODGKIN HUXLEY MODEL IN CURRENT CLAMP EXPERIMENTS AND SHOWS ACTION POTENTIAL PROPAGATION
+# Time is in secs, voltage in mvs, conductances in m mho/mm^2, capacitance in uF/mm^2
+
+# threshold value of current is 0.0223
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import find_peaks
+
+# ImpCur = float(input("Enter the input current:"))  # input current here
+
+# Given data
+g_K_max = .36  # max conductance of K channel
+V_K = -77  # voltage of K channel
+g_Na_max = 1.20  # max conductance of Na channel
+V_Na = 50  # voltage of Na channel
+g_l = 0.003  # conductance of combined gates
+V_l = -54.387  # voltage of combined channel
+cm = .01
+V = -64.9964  # base voltage
+m = 0.0530
+h = 0.5960
+n = 0.3177
+dt = 0.01  # 0.01 ms   #For solving it analytically
+niter = 50000  # Number of iterations we will take , to gain a significant accuracy
+
+# To store the values
+g_Na_hist = np.zeros(niter)
+g_K_hist = np.zeros(niter)
+V_hist = np.zeros(niter)
+m_hist = np.zeros(niter)
+h_hist = np.zeros(niter)
+n_hist = np.zeros(niter)
+
+
+def plot_V_vs_t(V_hist, I_ext):
+    t = np.array([i for i in range(niter)])
+    plt.plot(t * dt, V_hist)
+    plt.grid()
+    plt.title('Voltage vs Time for I=%f $\mu$A' % I_ext)
+    plt.xlabel('time in msec')
+    plt.ylabel('Voltage in mV')
+    plt.show()
+
+
+freq_array = []
+
+
+def feq_vs_i_plot(V_hist):
+    peaks = find_peaks(V_hist, height=10)
+    # print(V_hist[peaks])
+    freq = len(peaks) / 0.5
+    freq_array.append(freq)
+    # plt.plot(ImpCur,freq)
+
+
+def plot_conductances(m_hist, h_hist, n_hist, I_ext):
+    t = np.array([i for i in range(niter)])
+    g_Na = g_Na_max * (m_hist ** 3) * h_hist
+    g_K = g_K_max * n_hist ** 4
+    plt.plot(t * dt, g_Na, 'r', label='g_Na')
+    plt.plot(t * dt, g_K, 'b', label='g_K')
+    plt.title('Conductances for I=%f $\mu$A' % I_ext)
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+
+def plot_gating_variables(m_hist, h_hist, n_hist, I_ext):
+    t = np.array([i for i in range(niter)])
+    plt.plot(t * dt, m_hist, 'y', label='m')
+    plt.plot(t * dt, h_hist, 'g', label='h')
+    plt.plot(t * dt, n_hist, 'b', label='n')
+    plt.xlabel('Time in msec')
+    plt.title('Gating variables for I=%f $\mu$A' % I_ext)
+    plt.grid()
+    plt.legend()
+    plt.show()
+
+
+# Hugston-Huxley Model
+
+
+def HH_model(curr):
+    I_app = curr * np.ones(niter)
+    global m, n, h, V;
+    for i in range(niter):
+        g_Na = g_Na_max * (m ** 3) * h
+        g_K = g_K_max * (n ** 4)
+        g_total = g_Na + g_K + g_l
+       
+        V_inf = ((g_Na * V_Na + g_K * V_K + g_l * V_l) + I_app[i]) / g_total
+        tau_v = cm / g_total
+       
+        V = V_inf + (V - V_inf) * np.exp(-dt / tau_v)
+       
+        alpha_m = 0.1 * (V + 40) / (1 - np.exp(-(V + 40) / 10))
+        beta_m = 4 * np.exp(-0.0556 * (V + 65))
+       
+        alpha_n = 0.01 * (V + 55) / (1 - np.exp(-(V + 55) / 10))
+        beta_n = 0.125 * np.exp(-(V + 65) / 80)
+       
+        alpha_h = 0.07 * np.exp(-0.05 * (V + 65))
+        beta_h = 1 / (1 + np.exp(-0.1 * (V + 35)))
+       
+        tau_m = 1 / (alpha_m + beta_m)
+        tau_h = 1 / (alpha_h + beta_h)
+        tau_n = 1 / (alpha_n + beta_n)
+       
+        m_inf = alpha_m * tau_m
+        h_inf = alpha_h * tau_h
+        n_inf = alpha_n * tau_n
+       
+        m = m_inf + (m - m_inf) * np.exp(-dt / tau_m)
+        h = h_inf + (h - h_inf) * np.exp(-dt / tau_h)
+        n = n_inf + (n - n_inf) * np.exp(-dt / tau_n)
+       
+        V_hist[i] = V  # Instantaneous voltage for the given input current
+        m_hist[i] = m
+        h_hist[i] = h
+        n_hist[i] = n
+
+    feq_vs_i_plot(V_hist)
+
+di = 0.0223
+di_arr = []
+
+while di < 0.6:
+    di_arr.append(di)
+    # plot_V_vs_t(V_hist, i)
+    # plot_conductances(m_hist, h_hist, n_hist, i)
+    # plot_gating_variables(m_hist, h_hist, n_hist, i)
+    HH_model(di)
+    # print(V_hist)
+    
+
+    di = di + 0.01
+
+plt.plot(di_arr, freq_array)
+plt.show()
